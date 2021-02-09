@@ -94,6 +94,18 @@ func (server Server) handleMessage(request Request) {
 		server.ChannelObj.getOrAdd(channel).addClient(&client)
 		break
 	case "get_channels":
+		client := Client{
+			Name: "",
+			Addr: request.Addr,
+		}
+		names := server.GetChannelsNames()
+		server.send(Response{
+			Type:    "channels",
+			Message: "",
+			Data: map[string]interface{}{
+				"channels": names,
+			},
+		}, client)
 		break
 	default:
 		break
@@ -165,4 +177,13 @@ func (server Server) broadcast(message string, exceptClient *Client) {
 
 func (server Server) GetChannels() map[string]*Channel {
 	return server.ChannelObj.Channels
+}
+
+// 获取通道名称列表
+func (server Server) GetChannelsNames() []string {
+	var names []string
+	for name, _ := range server.ChannelObj.Channels {
+		names = append(names, name)
+	}
+	return names
 }

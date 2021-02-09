@@ -39,8 +39,15 @@ func (client Client) connect() {
 	})
 }
 
+func (client Client) getChannels() {
+	client.send(Request{
+		Type:    "get_channels",
+		Message: "",
+		Data:    nil,
+	})
+}
+
 func main() {
-	client.Channel = "default"
 	for client.Name == "" {
 		fmt.Print("Input Name: ")
 		_, _ = fmt.Scanln(&client.Name)
@@ -54,7 +61,7 @@ func main() {
 	}
 	client.conn = conn
 	defer conn.Close()
-	client.connect() // 连接到服务器
+	client.getChannels()
 	// 读取数据
 	go client.handleRead()
 	// 发送数据
@@ -76,10 +83,11 @@ func (client Client) handleWrite() {
 }
 
 type Response struct {
-	Type     string `json:"type"`
-	Message  string `json:"message"`
-	Channel  string `json:"channel"`
-	SendUser string `json:"send_user"`
+	Type     string                 `json:"type"`
+	Message  string                 `json:"message"`
+	Channel  string                 `json:"channel"`
+	SendUser string                 `json:"send_user"`
+	Data     map[string]interface{} `json:"data"`
 }
 
 func (client Client) handleRead() {
@@ -89,7 +97,20 @@ func (client Client) handleRead() {
 		if l > 0 {
 			var response Response
 			_ = json.Unmarshal(bites[:l], &response)
-			fmt.Printf("\n[%s %s] %s \n", response.Channel, response.SendUser, response.Message)
+			switch response.Type {
+			case "message":
+				fmt.Printf("\n[%s %s] %s \n", response.Channel, response.SendUser, response.Message)
+				break
+			case "channels":
+				fmt.Printf("\n[系统有以下渠道, 输入渠道名称或者自定义名称] \n %v \n", response.Data["channels"])
+				channel := ""
+				for channel == "" {
+					fmt.Scanln(&channel)
+				}
+				client.Channel = channel
+				client.connect() // 连接到服务器
+				fmt.Printf("[连接到 %s 通道成功] \n", client.Channel)
+			}
 		} else {
 			time.Sleep(1 * time.Second)
 		}

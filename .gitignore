@@ -19,3 +19,4 @@
 .idea
 client/.idea
 server/.idea
+client/vendor
