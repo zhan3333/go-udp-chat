@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 )
 
 type Server struct {
@@ -30,19 +31,29 @@ func (server *Server) Start() error {
 }
 
 func (server Server) Receive() {
-	data := make([]byte, 1024)
 	for {
-		l, remoteAddr, err := server.Listener.ReadFromUDP(data)
+		var raw = make([]byte, 1024)
+		l, remoteAddr, err := server.Listener.ReadFromUDP(raw)
 		if err != nil {
-			_ = fmt.Errorf("[无效的UDP数据包] %s", err.Error())
+			fmt.Printf("[无效的UDP数据包] %s", err.Error())
+			time.Sleep(1 * time.Second)
+			continue
 		}
+		if l == 0 {
+			// 无内容
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		// 截取有效部分
+		raw = raw[:l]
 		var message ClientMessage
-		if err := json.Unmarshal(data[:l], &message); err != nil {
+		if err := json.Unmarshal(raw, &message); err != nil {
 			// 解码错误
-			fmt.Printf("[解码失败 %s] %s \n", data, err.Error())
+			fmt.Printf("[解码失败 %s] %s \n", raw, err.Error())
+			continue
 		}
 		request := Request{
-			Raw:  data,
+			Raw:  raw,
 			Addr: remoteAddr,
 			Body: message,
 		}

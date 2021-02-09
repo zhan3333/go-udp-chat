@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"time"
 )
@@ -47,6 +48,10 @@ func (client Client) getChannels() {
 	})
 }
 
+//客户端主要做以下的事情
+//连接到服务器
+//选择room
+//输入聊天内容
 func main() {
 	for client.Name == "" {
 		fmt.Print("Input Name: ")
@@ -57,10 +62,11 @@ func main() {
 	dstAddr := &net.UDPAddr{IP: ip, Port: 9981}
 	conn, err := net.DialUDP("udp", srcAddr, dstAddr)
 	if err != nil {
-		fmt.Println(err)
+		log.Panicf("run client failed: %+v", err)
 	}
-	client.conn = conn
 	defer conn.Close()
+
+	client.conn = conn
 	client.getChannels()
 	// 读取数据
 	go client.handleRead()
